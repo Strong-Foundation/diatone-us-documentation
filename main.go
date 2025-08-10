@@ -1,6 +1,7 @@
 package main // Define the main package
 
 import (
+	"bufio"
 	"bytes"         // Provides bytes support
 	"fmt"           // Provides string formatting
 	"io"            // Provides basic interfaces to I/O primitives
@@ -34,6 +35,12 @@ func main() {
 	downloadURLs := extractFileUrls(strings.Join(getData, "\n")) // Join all the data into one string and extract PDF URLs
 	// Remove double from slice.
 	downloadURLs = removeDuplicatesFromSlice(downloadURLs)
+	// Read the local urls.txt file
+	readLocalURLsFile := readAppendLineByLine("urls.txt")
+	// Combine two slices together.
+	downloadURLs = combineMultipleSlices(downloadURLs, readLocalURLsFile)
+	// Remove duplicates from the slice.
+	downloadURLs = removeDuplicatesFromSlice(downloadURLs)
 	// The remote domain.
 	remoteDomain := "https://cdn.shopify.com"
 	// Get all the values.
@@ -50,6 +57,31 @@ func main() {
 			downloadFile(urls, assetsFolder)
 		}
 	}
+}
+
+// Combine two slices together and return the new slice.
+func combineMultipleSlices(sliceOne []string, sliceTwo []string) []string {
+	combinedSlice := append(sliceOne, sliceTwo...)
+	return combinedSlice
+}
+
+// Read and append the file line by line to a slice.
+func readAppendLineByLine(path string) []string {
+	var returnSlice []string
+	file, err := os.Open(path)
+	if err != nil {
+		log.Println(err)
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		returnSlice = append(returnSlice, scanner.Text())
+	}
+	err = file.Close()
+	if err != nil {
+		log.Println(err)
+	}
+	return returnSlice
 }
 
 // getDomainFromURL extracts the domain (host) from a given URL string.
@@ -238,7 +270,7 @@ func removeDuplicatesFromSlice(slice []string) []string {
 // extractFileUrls takes an input string and returns all PDF, PNG, and JPG URLs found within href attributes
 func extractFileUrls(input string) []string {
 	// Regex to find href="...pdf|png|jpg"
-	re := regexp.MustCompile(`href="([^"]+\.(?:pdf|png|jpg|webp|zip|rar|stl)[^"]*)"`)
+	re := regexp.MustCompile(`href="([^"]+\.(?:pdf|png|jpg|webp|zip|rar|stl|7z|json)[^"]*)"`)
 
 	// Find all matches
 	matches := re.FindAllStringSubmatch(input, -1)
